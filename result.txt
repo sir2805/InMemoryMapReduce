@@ -1,0 +1,11 @@
+a	3
+asdf	1
+bb	3
+ccc	3
+dddd	1
+eeeee	3
+f	1
+ffffff	1
+hasfd	1
+sda	1
+w	1

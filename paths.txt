@@ -1,0 +1,5 @@
+input F:\Downloads\Fragments\InMemoryMapReduce\input.txt
+output F:\Downloads\Fragments\InMemoryMapReduce\output.txt
+result F:\Downloads\Fragments\InMemoryMapReduce\result.txt
+map "F:\Downloads\Fragments\InMemoryMapReduce\map_script.exe"
+reduce "F:\Downloads\Fragments\InMemoryMapReduce\reduce_script.exe"
