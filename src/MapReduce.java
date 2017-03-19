@@ -30,7 +30,7 @@ public class MapReduce {
         File input = new File(inputFilePath);
         File output = new File(outputFilePath);
         Process process = null;
-        if(command.equals("reduce")) {
+        if(command.equals("reduce")) { // а если пользователь ввёл reduuce - будем запускать map ничего не сказав пользователю. имхо, это неожиданное поведение, надо кидать исключение
             List<String> strings = new LinkedList<>();
             try {
                 BufferedReader br = new BufferedReader(new FileReader(input));
