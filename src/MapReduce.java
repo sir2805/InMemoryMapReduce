@@ -12,7 +12,7 @@ public class MapReduce {
         String striptPath = null;
         String command = "reduce";
         if (args.length == 0) {
-            inputFilePath = "F:\\Downloads\\Fragments\\InMemoryMapReduce\\output.txt";
+            inputFilePath = "F:\\Downloads\\Fragments\\InMemoryMapReduce\\output.txt"; // этот параметр нужно передавать в качестве параметра программы
             outputFilePath = "F:\\Downloads\\Fragments\\InMemoryMapReduce\\result.txt";
             striptPath = "F:\\Downloads\\Fragments\\InMemoryMapReduce\\reduce_script.exe";
 //            String resFilePath = "F:\\Downloads\\Fragments\\InMemoryMapReduce\\result.txt";
