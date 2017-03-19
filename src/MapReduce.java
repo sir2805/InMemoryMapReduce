@@ -1,4 +1,6 @@
 import java.io.*;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Created by PC on 18.03.2017.
@@ -8,11 +10,11 @@ public class MapReduce {
         String inputFilePath = null;
         String outputFilePath = null;
         String striptPath = null;
-        String command = "map";
+        String command = "reduce";
         if (args.length == 0) {
-            inputFilePath = "F:\\Downloads\\Fragments\\InMemoryMapReduce\\input.txt";
-            outputFilePath = "F:\\Downloads\\Fragments\\InMemoryMapReduce\\output.txt";
-            striptPath = "C:\\Users\\PC\\Documents\\Visual Studio 2015\\Projects\\map_script\\Debug\\map_script.exe";
+            inputFilePath = "F:\\Downloads\\Fragments\\InMemoryMapReduce\\output.txt";
+            outputFilePath = "F:\\Downloads\\Fragments\\InMemoryMapReduce\\result.txt";
+            striptPath = "F:\\Downloads\\Fragments\\InMemoryMapReduce\\reduce_script.exe";
 //            String resFilePath = "F:\\Downloads\\Fragments\\InMemoryMapReduce\\result.txt";
 //            File result = new File(resFilePath);
         }
@@ -29,15 +31,26 @@ public class MapReduce {
         File input = new File(inputFilePath);
         File output = new File(outputFilePath);
         Process process = null;
-//        if(command.equals("reduce")) {
-//            File sortedInput = new File(input.getParentFile().getAbsolutePath());
-//            try {
-//                BufferedReader br = new BufferedReader(new FileReader(input));
-//
-//            } catch (FileNotFoundException e) {
-//                e.printStackTrace();
-//            }
-//        }
+        if(command.equals("reduce")) {
+            List<String> strings = new LinkedList<>();
+            try {
+                BufferedReader br = new BufferedReader(new FileReader(input));
+                String line;
+                while((line = br.readLine()) != null) {
+                    strings.add(line);
+                }
+                strings.sort(String::compareTo);
+                input.delete();
+                BufferedWriter fr = new BufferedWriter(new FileWriter(input));
+                for(String st : strings) {
+                    fr.append(st + '\n');
+                }
+                fr.flush();
+                fr.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
         try {
             ProcessBuilder builder = new ProcessBuilder(striptPath);
 

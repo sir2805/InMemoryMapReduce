@@ -1,4 +1,5 @@
 a	3
+asd	2
 asdf	1
 bb	3
 ccc	3
@@ -7,5 +8,5 @@ eeeee	3
 f	1
 ffffff	1
 hasfd	1
-sda	1
-w	1
+wasd	2
+wsda	1
