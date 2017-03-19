@@ -17,16 +17,15 @@ public class MapReduce {
             striptPath = "F:\\Downloads\\Fragments\\InMemoryMapReduce\\reduce_script.exe";
 //            String resFilePath = "F:\\Downloads\\Fragments\\InMemoryMapReduce\\result.txt";
 //            File result = new File(resFilePath);
+        } else if(args.length != 4) {
+            System.err.println("Invalid params");
+            return;
         }
         else {
-            try {
-                command = args[0];
-                striptPath = args[1];
-                inputFilePath = args[2];
-                outputFilePath = args[3];
-            } catch (IndexOutOfBoundsException ex) {
-                System.err.println("Invalid params");
-            }
+            command = args[0];
+            striptPath = args[1];
+            inputFilePath = args[2];
+            outputFilePath = args[3];
         }
         File input = new File(inputFilePath);
         File output = new File(outputFilePath);
