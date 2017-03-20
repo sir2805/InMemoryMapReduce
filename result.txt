@@ -1,14 +1,1 @@
-a	3
-asd	2
-asdf	1
-bb	3
-ccc	3
-ddd	2
-dddd	1
-eeeee	3
-f	1
-ffffff	1
-hasfd	1
-wasd	2
-wsda	1
-zzz	1
+	-858993460
