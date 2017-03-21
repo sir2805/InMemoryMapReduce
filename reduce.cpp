@@ -7,17 +7,9 @@ int main() {
 	std::cin >> word;
 	int wordCount;
 	std::cin >> wordCount;
-	for (std::string curWord; std::cin >> curWord;) {
-		int cur;
-		std::cin >> cur;
-		if (word == curWord) {
-			wordCount += cur;
-		}
-		else {
-			std::cout << word << '\t' << wordCount << std::endl;
-			word = curWord;
-			wordCount = cur;
-		}
+	wordCount = 0;
+	for (std::string curWord; std::getline(std::cin, curWord); ) {
+		wordCount++;
 	}
 	std::cout << word << '\t' << wordCount << std::endl;
 	return 0;
