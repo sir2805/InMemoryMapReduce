@@ -14,11 +14,11 @@ public class MapReduce {
         List<String> striptParams;
         String command;
 //        if (args.length == 0) {
-//            inputFilePath = "F:\\Downloads\\Fragments\\InMemoryMapReduce\\output.txt";
-//            outputFilePath = "F:\\Downloads\\Fragments\\InMemoryMapReduce\\result.txt";
+//            inputFilePath = "F:\\Downloads\\Fragments\\InMemoryMapReduce\\input.txt";
+//            outputFilePath = "F:\\Downloads\\Fragments\\InMemoryMapReduce\\output.txt";
 //            striptParams = new LinkedList<>();
-//            command = "reduce";
-//            striptParams.add("C:\\Users\\PC\\Documents\\Visual Studio 2015\\Projects\\reduce_script\\Debug\\reduce_script.exe");
+//            command = "map";
+//            striptParams.add("C:\\Users\\PC\\Documents\\Visual Studio 2015\\Projects\\map_script\\Debug\\map_script.exe");
 //            striptParams.add("run");
 ////            String resFilePath = "F:\\Downloads\\Fragments\\InMemoryMapReduce\\result.txt";
 ////            File result = new File(resFilePath);
@@ -39,23 +39,21 @@ public class MapReduce {
 
         Process process;
         ProcessBuilder builder =  new ProcessBuilder(striptParams);
+        String line;
 
-        switch (command) {
-            case "reduce":
-                List<String> strings = new LinkedList<>();
-                BufferedReader br = null;
+//        OutputStream stdin = null;
+//        InputStream stdout = null;
+//
+//        BufferedReader reader = null;
+//        BufferedWriter writer = null;
 
-                OutputStream stdin = null;
-                InputStream stdout = null;
+        try (BufferedReader inputReader = new BufferedReader(new FileReader(input));
+             BufferedWriter outputWriter = new BufferedWriter(new FileWriter(output))) {
+            switch (command) {
+                case "reduce":
+                    List<String> strings = new LinkedList<>();
 
-                BufferedReader reader = null;
-                BufferedWriter writer = null;
-                BufferedWriter outputWriter;
-
-                try {
-                    br = new BufferedReader(new FileReader(input));
-                    String line;
-                    while ((line = br.readLine()) != null) {
+                    while ((line = inputReader.readLine()) != null) {
                         strings.add(line);
                     }
                     strings.sort(String::compareTo);
@@ -63,78 +61,92 @@ public class MapReduce {
                     String cur = strings.get(0);
                     int idx = 0;
 
-                    outputWriter = new BufferedWriter(new FileWriter(output));
-
                     for (int i = 1; i < strings.size(); i++) {
                         if (!cur.equals(strings.get(i))) {
                             process = builder.start();
 
-                            stdin = process.getOutputStream();
-                            stdout = process.getInputStream();
+                            try (OutputStream stdin = process.getOutputStream();
+                                 InputStream stdout = process.getInputStream();
 
-                            reader = new BufferedReader(new InputStreamReader(stdout));
-                            writer = new BufferedWriter(new OutputStreamWriter(stdin));
+                                 BufferedReader reader = new BufferedReader(new InputStreamReader(stdout));
+                                 BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stdin))) {
 
-                            for (; idx < i; idx++) {
-                                writer.write(strings.get(idx) + '\n');
+                                for (; idx < i; idx++) {
+                                    writer.write(strings.get(idx) + '\n');
+                                }
+
+                                writer.flush();
+                                writer.close();
+                                process.waitFor();
+
+                                while ((line = reader.readLine()) != null) {
+                                    outputWriter.append(line + '\n');
+                                }
+                                cur = strings.get(idx);
                             }
-                            writer.flush();
-                            writer.close();
-                            process.waitFor();
-
-                            while ( (line = reader.readLine()) != null) {
-                                outputWriter.append(line + '\n');
-                            }
-                            cur = strings.get(idx);
                         }
                     }
                     process = builder.start();
 
-                    stdin = process.getOutputStream();
-                    stdout = process.getInputStream();
+                    try (OutputStream stdin = process.getOutputStream();
+                         InputStream stdout = process.getInputStream();
 
-                    reader = new BufferedReader(new InputStreamReader(stdout));
-                    writer = new BufferedWriter(new OutputStreamWriter(stdin));
+                         BufferedReader reader = new BufferedReader(new InputStreamReader(stdout));
+                         BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stdin))) {
 
-                    for (; idx < strings.size(); idx++) {
-                        writer.write(strings.get(idx) + '\n');
+                        for (; idx < strings.size(); idx++) {
+                            writer.write(strings.get(idx) + '\n');
+                        }
+
+                        writer.flush();
+                        writer.close();
+                        process.waitFor();
+
+                        while ((line = reader.readLine()) != null) {
+                            outputWriter.append(line + '\n');
+                        }
+                        outputWriter.flush();
                     }
-                    writer.flush();
-                    writer.close();
-                    process.waitFor();
+                    break;
 
-                    while ( (line = reader.readLine()) != null) {
-                        outputWriter.append(line + '\n');
+                case "map":
+                    while ((line = inputReader.readLine()) != null) {
+                        process = builder.start();
+
+                        try (OutputStream stdin = process.getOutputStream();
+                             InputStream stdout = process.getInputStream();
+
+                             BufferedReader reader = new BufferedReader(new InputStreamReader(stdout));
+                             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stdin))) {
+
+                            writer.write(line);
+                            writer.flush();
+                            writer.close();
+
+                            process.waitFor();
+
+                            while ((line = reader.readLine()) != null) {
+                                outputWriter.append(line + '\n');
+                            }
+                        }
+                        outputWriter.flush();
                     }
-                    outputWriter.flush();
+//                builder.redirectInput(input);
+//                builder.redirectErrorStream( true );
+//                builder.redirectOutput(output);
+//
+//                process = builder.start();
+//                try {
+//                    process.waitFor();
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                    throw e;
+//                }
+                    break;
 
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    throw e;
-                } finally {
-                    writer.close();
-                    reader.close();
-                    stdin.close();
-                    stdout.close();
-                    br.close();
-                }
-                break;
-            case "map":
-                builder.redirectInput(input);
-                builder.redirectErrorStream( true );
-                builder.redirectOutput(output);
-
-                process = builder.start();
-                try {
-                    process.waitFor();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                    throw e;
-                }
-                break;
-
-            default:
-                throw new IllegalArgumentException("No such command. map/reduce required");
+                default:
+                    throw new IllegalArgumentException("No such command. map/reduce required");
+            }
         }
     }
 }
