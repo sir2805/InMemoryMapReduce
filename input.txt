@@ -1,3 +1,7 @@
 aaa aa a aa aaa
+aaa aa
+a
+aaa aa a a a
+aaaa aa a
 F:\Downloads\Fragments\InMemoryMapReduce\map_script.exe
 F:\Downloads\Fragments\InMemoryMapReduce\map_script.exe

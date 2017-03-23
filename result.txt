@@ -1,4 +1,5 @@
-a	12
-aa	24
-aaa	24
+a	6
+aa	5
+aaa	4
+aaaa	1
 fdownloadsfragmentsinmemorymapreducemapscriptexe	2

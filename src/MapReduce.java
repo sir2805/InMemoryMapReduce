@@ -1,6 +1,6 @@
 import java.io.*;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -13,16 +13,7 @@ public class MapReduce {
         String outputFilePath;
         List<String> striptParams;
         String command;
-//        if (args.length == 0) {
-//            inputFilePath = "F:\\Downloads\\Fragments\\InMemoryMapReduce\\input.txt";
-//            outputFilePath = "F:\\Downloads\\Fragments\\InMemoryMapReduce\\output.txt";
-//            striptParams = new LinkedList<>();
-//            command = "map";
-//            striptParams.add("C:\\Users\\PC\\Documents\\Visual Studio 2015\\Projects\\map_script\\Debug\\map_script.exe");
-//            striptParams.add("run");
-////            String resFilePath = "F:\\Downloads\\Fragments\\InMemoryMapReduce\\result.txt";
-////            File result = new File(resFilePath);
-//        } else
+        
         if(args.length < 4) {
             throw new IllegalArgumentException();
         }
@@ -41,17 +32,11 @@ public class MapReduce {
         ProcessBuilder builder =  new ProcessBuilder(striptParams);
         String line;
 
-//        OutputStream stdin = null;
-//        InputStream stdout = null;
-//
-//        BufferedReader reader = null;
-//        BufferedWriter writer = null;
-
         try (BufferedReader inputReader = new BufferedReader(new FileReader(input));
              BufferedWriter outputWriter = new BufferedWriter(new FileWriter(output))) {
             switch (command) {
                 case "reduce":
-                    List<String> strings = new LinkedList<>();
+                    List<String> strings = new ArrayList<>();
 
                     while ((line = inputReader.readLine()) != null) {
                         strings.add(line);
@@ -131,17 +116,6 @@ public class MapReduce {
                         }
                         outputWriter.flush();
                     }
-//                builder.redirectInput(input);
-//                builder.redirectErrorStream( true );
-//                builder.redirectOutput(output);
-//
-//                process = builder.start();
-//                try {
-//                    process.waitFor();
-//                } catch (InterruptedException e) {
-//                    e.printStackTrace();
-//                    throw e;
-//                }
                     break;
 
                 default:
