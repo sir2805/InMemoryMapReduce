@@ -1,101 +1,248 @@
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 /**
  * MapReduce
  * Performs map or reduce depending on the command from cmd
  */
+
+class Node implements Comparable<Node> {
+    private String key;
+    private String value;
+
+    public Node(String str){
+        StringTokenizer tokenizer = new StringTokenizer(str, "\t");
+        key = tokenizer.nextToken();
+        value = tokenizer.nextToken();
+    }
+
+    @Override
+    public int compareTo(Node o) {
+        return key.compareTo(o.key);
+    }
+
+    @Override
+    public String toString() {
+        return  key + '\t' + value;
+    }
+}
+
+class ExternalSort {
+    private static final int CAPACITY = 1000000;
+    private List<String> filePaths = new ArrayList<>();
+
+    public ExternalSort(String inputFilePath) throws IOException {
+        try (RandomAccessFile inputFile = new RandomAccessFile(inputFilePath, "r")) {
+            filePaths.add("sorter0.txt");
+            int i = 1;
+            while (inputFile.getFilePointer() != inputFile.length()) {
+                String chunk = read(inputFile, CAPACITY);
+                createFile(i, chunk);
+                i++;
+            }
+        }
+    }
+
+    public String sort() throws IOException {
+
+        while(filePaths.size() > 2) {
+            merge(filePaths.get(1), filePaths.get(2), filePaths.get(0));
+            String tmp = filePaths.get(1);
+            filePaths.set(1, filePaths.get(0));
+            filePaths.set(0, tmp);
+
+            int i = 3;
+            int newSize = 1;
+            for (; i < filePaths.size(); i += 2){
+                if (i + 1 < filePaths.size()){
+                    merge(filePaths.get(i), filePaths.get(i + 1), filePaths.get((i + 1)/2));
+                }else{
+                    tmp = filePaths.get((i + 1)/2);
+                    filePaths.set((i + 1)/2, filePaths.get(i));
+                    filePaths.set(i, tmp);
+                }
+                newSize = (i + 1)/2;
+            }
+            for (int j = filePaths.size() - 1; j > newSize; j--){
+                File tmpFile = new File(filePaths.get(j));
+                tmpFile.delete();
+                filePaths.remove(j);
+            }
+        }
+        File tmpFile = new File(filePaths.get(0));
+        tmpFile.delete();
+        return filePaths.get(1);
+    }
+
+    private void merge(String firstFilePath, String secondFilePath, String resFilePath) throws IOException {
+        try (RandomAccessFile first = new RandomAccessFile(firstFilePath, "r");
+             RandomAccessFile second = new RandomAccessFile(secondFilePath, "r");
+             BufferedWriter res = new BufferedWriter(new FileWriter(resFilePath))) {
+            Queue<Node> contentFirst = new PriorityQueue<>(Node::compareTo);
+            Queue<Node> contentSecond = new PriorityQueue<>(Node::compareTo);
+            String firstChunk = read(first, CAPACITY / 2);
+            String secondChunk = read(second, CAPACITY / 2);
+            split(firstChunk, contentFirst);
+            split(secondChunk, contentSecond);
+            while (true) {
+                while (contentFirst.size() != 0 && contentSecond.size() != 0) {
+                    if (contentFirst.peek().compareTo(contentSecond.peek()) < 0) {
+                        res.write(contentFirst.poll().toString() + '\n');
+                    } else {
+                        res.write(contentSecond.poll().toString() + '\n');
+                    }
+                }
+                if (contentFirst.size() == 0) {
+                    firstChunk = read(first, CAPACITY / 2);
+                    if (firstChunk.charAt(0) == 0) {
+                        while (true) {
+                            secondChunk = read(second, CAPACITY / 2);
+                            if (secondChunk.charAt(0) == 0) {
+                                break;
+                            }
+                            split(secondChunk, contentSecond);
+                            while (contentSecond.size() != 0) {
+                                res.write(contentSecond.poll().toString() + '\n');
+                            }
+                        }
+                        break;
+                    }
+                    split(firstChunk, contentFirst);
+                    while (contentFirst.size() != 0) {
+                        res.write(contentFirst.poll().toString() + '\n');
+                    }
+                }
+                res.flush();
+            }
+//                if (contentSecond.size() == 0) {
+//                    secondChunk = read(second, CAPACITY / 2);
+//                    split(secondChunk, contentSecond);
+//                }
+//                //TODO fix Merge
+////                while (content.size() != 0) {
+////                    res.write(content.poll().toString() + "\n");
+////                }
+//                res.flush();
+//            } while (first.getFilePointer() != first.length() || contentFirst.size() != 0) {
+//                String chunk = read(first, CAPACITY);
+//                if(chunk.charAt(0) == 0) {
+//                    break;
+//                }
+//                split(chunk, contentFirst);
+//                while (contentFirst.size() != 0) {
+//                    res.write(contentFirst.poll().toString() + "\n");
+//                }
+//                res.flush();
+//            }
+//            while (second.getFilePointer() != second.length() || contentSecond.size() != 0) {
+//                String chunk = read(first, CAPACITY);
+//
+//                System.out.println(second.getFilePointer());
+//                System.out.println(second.length());
+//                if(chunk.charAt(0) == 0) {
+//                    break;
+//                }
+//                split(chunk, contentSecond);
+//                while (contentSecond.size() != 0) {
+//                    res.write(contentSecond.poll().toString() + "\n");
+//                }
+//                res.flush();
+//            }
+        }
+    }
+
+    private void split(String chunk, Queue<Node> content) {
+        StringTokenizer st = new StringTokenizer(chunk, "\n\r\u0000");
+        while (st.hasMoreTokens()) {
+            content.add(new Node(st.nextToken()));
+        }
+    }
+
+    private void createFile(int idx, String chunk) throws IOException{
+        filePaths.add("sorter" + idx + ".txt");
+        File sorter = new File(filePaths.get(idx));
+        Queue<Node> content = new PriorityQueue<>(Node::compareTo);
+        split(chunk, content);
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(sorter))) {
+            while (content.size() != 0) {
+                bw.write(content.poll().toString() + "\n");
+            }
+            bw.flush();
+        }
+    }
+
+    private String read(RandomAccessFile inputFile, int size) throws IOException {
+        byte[] content = new byte[size];
+        inputFile.read(content);
+        String endOfLine = inputFile.readLine();
+        if (endOfLine != null)
+            return new String(content) + endOfLine;
+        return new String(content);
+    }
+}
+
 public class MapReduce {
     public static void main(String[] args) throws IOException, InterruptedException {
         String inputFilePath;
         String outputFilePath;
         List<String> striptParams;
         String command;
-        
-        if(args.length < 4) {
+
+        if (args.length < 4) {
             throw new IllegalArgumentException();
         }
         else {
             command = args[0];
-            String[] params = Arrays.copyOfRange(args, 1, args.length - 3);
+            String[] params = Arrays.copyOfRange(args, 1, args.length - 2);
             striptParams = Arrays.asList(params);
             inputFilePath = args[args.length - 2];
             outputFilePath = args[args.length - 1];
         }
 
         File input = new File(inputFilePath);
-        File output = new File(outputFilePath);
 
         Process process;
         ProcessBuilder builder =  new ProcessBuilder(striptParams);
         String line;
 
-        try (BufferedReader inputReader = new BufferedReader(new FileReader(input));
-             BufferedWriter outputWriter = new BufferedWriter(new FileWriter(output))) {
+        try (BufferedWriter outputWriter = new BufferedWriter(new FileWriter(outputFilePath))) {
             switch (command) {
                 case "reduce":
-                    List<String> strings = new ArrayList<>();
+                    ExternalSort sorted = new ExternalSort(inputFilePath);
+                    try (BufferedReader inputReader = new BufferedReader(new FileReader(sorted.sort()))) {
+                        List<Node> sameKey = new ArrayList<>();
+                        sameKey.add(new Node(inputReader.readLine()));
+                        while ((line = inputReader.readLine()) != null) {
+                            Node curNode = new Node(line);
+                            if (curNode.compareTo(sameKey.get(0))== 0) {
+                                sameKey.add(curNode);
+                            } else {
+                                process = builder.start();
 
-                    while ((line = inputReader.readLine()) != null) {
-                        strings.add(line);
-                    }
-                    strings.sort(String::compareTo);
+                                try (OutputStream stdin = process.getOutputStream();
+                                     InputStream stdout = process.getInputStream();
 
-                    String cur = strings.get(0);
-                    int idx = 0;
+                                     BufferedReader reader = new BufferedReader(new InputStreamReader(stdout));
+                                     BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stdin))) {
 
-                    for (int i = 1; i < strings.size(); i++) {
-                        if (!cur.equals(strings.get(i))) {
-                            process = builder.start();
+                                    for (Node st : sameKey) {
+                                        writer.write(st.toString() + '\n');
+                                    }
 
-                            try (OutputStream stdin = process.getOutputStream();
-                                 InputStream stdout = process.getInputStream();
+                                    writer.flush();
+                                    writer.close();
+                                    process.waitFor();
+                                    String res;
 
-                                 BufferedReader reader = new BufferedReader(new InputStreamReader(stdout));
-                                 BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stdin))) {
-
-                                for (; idx < i; idx++) {
-                                    writer.write(strings.get(idx) + '\n');
+                                    while ((res = reader.readLine()) != null) {
+                                        outputWriter.append(res).append(String.valueOf('\n'));
+                                    }
+                                    sameKey.clear();
+                                    sameKey.add(curNode);
                                 }
-
-                                writer.flush();
-                                writer.close();
-                                process.waitFor();
-
-                                while ((line = reader.readLine()) != null) {
-                                    outputWriter.append(line + '\n');
-                                }
-                                cur = strings.get(idx);
                             }
                         }
-                    }
-                    process = builder.start();
-
-                    try (OutputStream stdin = process.getOutputStream();
-                         InputStream stdout = process.getInputStream();
-
-                         BufferedReader reader = new BufferedReader(new InputStreamReader(stdout));
-                         BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stdin))) {
-
-                        for (; idx < strings.size(); idx++) {
-                            writer.write(strings.get(idx) + '\n');
-                        }
-
-                        writer.flush();
-                        writer.close();
-                        process.waitFor();
-
-                        while ((line = reader.readLine()) != null) {
-                            outputWriter.append(line + '\n');
-                        }
                         outputWriter.flush();
-                    }
-                    break;
-
-                case "map":
-                    while ((line = inputReader.readLine()) != null) {
                         process = builder.start();
 
                         try (OutputStream stdin = process.getOutputStream();
@@ -104,17 +251,45 @@ public class MapReduce {
                              BufferedReader reader = new BufferedReader(new InputStreamReader(stdout));
                              BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stdin))) {
 
-                            writer.write(line);
+                            for (Node st : sameKey) {
+                                writer.write(st.toString() + '\n');
+                            }
+
                             writer.flush();
                             writer.close();
-
                             process.waitFor();
 
                             while ((line = reader.readLine()) != null) {
-                                outputWriter.append(line + '\n');
+                                outputWriter.append(line).append(String.valueOf('\n'));
                             }
+                            outputWriter.flush();
                         }
-                        outputWriter.flush();
+                    }
+                    break;
+
+                case "map":
+                    try (BufferedReader inputReader = new BufferedReader(new FileReader(input))) {
+                        while ((line = inputReader.readLine()) != null) {
+                            process = builder.start();
+
+                            try (OutputStream stdin = process.getOutputStream();
+                                 InputStream stdout = process.getInputStream();
+
+                                 BufferedReader reader = new BufferedReader(new InputStreamReader(stdout));
+                                 BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stdin))) {
+
+                                writer.write(line);
+                                writer.flush();
+                                writer.close();
+
+                                process.waitFor();
+
+                                while ((line = reader.readLine()) != null) {
+                                    outputWriter.append(line).append(String.valueOf('\n'));
+                                }
+                            }
+                            outputWriter.flush();
+                        }
                     }
                     break;
 
