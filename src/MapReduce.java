@@ -28,7 +28,7 @@ class Node implements Comparable<Node> {
 }
 
 class ExternalSort {
-    private static final int CAPACITY = 1000000;
+    private static final int CAPACITY = 1000;
 
     public static int getCAPACITY() {
         return CAPACITY;
@@ -99,22 +99,40 @@ class ExternalSort {
                 }
                 if (contentFirst.size() == 0) {
                     firstChunk = read(first, CAPACITY / 2);
-                    if (firstChunk.charAt(0) == 0) {
+                    split(firstChunk, contentFirst);
+                    if (contentFirst.size() == 0) {
                         while (true) {
                             secondChunk = read(second, CAPACITY / 2);
-                            if (secondChunk.charAt(0) == 0) {
+                            split(secondChunk, contentSecond);
+                            if (contentSecond.size() == 0) {
                                 break;
                             }
-                            split(secondChunk, contentSecond);
+//                            split(secondChunk, contentSecond);
                             while (contentSecond.size() != 0) {
                                 res.write(contentSecond.poll().toString() + '\n');
                             }
                         }
                         break;
                     }
-                    split(firstChunk, contentFirst);
-                    while (contentFirst.size() != 0) {
-                        res.write(contentFirst.poll().toString() + '\n');
+                    //split(firstChunk, contentFirst);
+                }
+                else if (contentSecond.size() == 0) {
+                    secondChunk = read(second, CAPACITY / 2);
+                    split(secondChunk, contentSecond);
+                    if (secondChunk.charAt(0) == 0) {
+                        while (true) {
+                            firstChunk = read(first, CAPACITY / 2);
+                            split(firstChunk, contentFirst);
+                            if (contentFirst.size() == 0) {
+//                            if (firstChunk.charAt(0) == 0) {
+                                break;
+                            }
+//                            split(firstChunk, contentFirst);
+                            while (contentFirst.size() != 0) {
+                                res.write(contentFirst.poll().toString() + '\n');
+                            }
+                        }
+                        break;
                     }
                 }
                 res.flush();
@@ -253,8 +271,8 @@ public class MapReduce {
                         try (OutputStream stdin = process.getOutputStream();
                              InputStream stdout = process.getInputStream();
 
-                             BufferedReader reader = new BufferedReader(new InputStreamReader(stdout));
-                             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stdin))) {
+                             BufferedReader reader = new BufferedReader(new InputStreamReader(stdout), ExternalSort.getCAPACITY());
+                             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stdin), ExternalSort.getCAPACITY())) {
 
                             for (Node st : sameKey) {
                                 writer.write(st.toString() + '\n');
@@ -273,60 +291,61 @@ public class MapReduce {
                     break;
 
                 case "map":
-//                    try (RandomAccessFile inputFile = new RandomAccessFile(inputFilePath, "r")) {
-//                        String buf;
-//                        while (inputFile.getFilePointer() != inputFile.length()) {
-//                            byte[] content = new byte[ExternalSort.getCAPACITY()];
-//                            inputFile.read(content);
-//                            String endOfLine = inputFile.readLine();
-//                            if (endOfLine != null)
-//                                buf = new String(content) + endOfLine;
-//                            buf = new String(content);
-//
-//                            process = builder.start();
-//
-//                            try (OutputStream stdin = process.getOutputStream();
-//                                 InputStream stdout = process.getInputStream();
-//
-//                                 BufferedReader reader = new BufferedReader(new InputStreamReader(stdout), ExternalSort.getCAPACITY());
-//                                 BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stdin), ExternalSort.getCAPACITY())) {
-//                                for (String st : buf.split("[\\n\\r\\u0000]")) {
-//                                    writer.write(st);
-//                                }
-//                                writer.flush();
-//                                writer.close();
-//
-//                                process.waitFor();
-//
-//                                while ((line = reader.readLine()) != null) {
-//                                    outputWriter.append(line).append(String.valueOf('\n'));
-//                                }
-//                            }
-//                            outputWriter.flush();
-//                        }
-                        try (BufferedReader inputReader = new BufferedReader(new FileReader(inputFilePath), ExternalSort.getCAPACITY())) {
-                            while ((line = inputReader.readLine()) != null) {
-                                process = builder.start();
-
-                                try (OutputStream stdin = process.getOutputStream();
-                                     InputStream stdout = process.getInputStream();
-
-                                     BufferedReader reader = new BufferedReader(new InputStreamReader(stdout), ExternalSort.getCAPACITY());
-                                     BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stdin), ExternalSort.getCAPACITY())) {
-
-                                    writer.write(line);
-                                    writer.flush();
-                                    writer.close();
-
-                                    process.waitFor();
-
-                                    while ((line = reader.readLine()) != null) {
-                                        outputWriter.append(line).append(String.valueOf('\n'));
-                                    }
-                                }
-                                outputWriter.flush();
+                    try (RandomAccessFile inputFile = new RandomAccessFile(inputFilePath, "r")) {
+                        String buf;
+                        while (inputFile.getFilePointer() != inputFile.length()) {
+                            byte[] content = new byte[ExternalSort.getCAPACITY()];
+                            inputFile.read(content);
+                            String endOfLine = inputFile.readLine();
+                            if (endOfLine != null)
+                                buf = new String(content) + endOfLine + '\n';
+                            else {
+                                buf = new String(content) + '\n';
                             }
+
+                            process = builder.start();
+
+                            try (OutputStream stdin = process.getOutputStream();
+                                 InputStream stdout = process.getInputStream();
+
+                                 BufferedReader reader = new BufferedReader(new InputStreamReader(stdout), 2 * ExternalSort.getCAPACITY());
+                                 BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stdin), 2  *ExternalSort.getCAPACITY())) {
+                                writer.write(buf);
+                                writer.flush();
+                                writer.close();
+
+                                process.waitFor();
+
+                                while ((line = reader.readLine()) != null) {
+                                    outputWriter.append(line).append('\n');
+                                }
+                            }
+                            outputWriter.flush();
                         }
+                    }
+//                        try (BufferedReader inputReader = new BufferedReader(new FileReader(inputFilePath), ExternalSort.getCAPACITY())) {
+//                            while ((line = inputReader.readLine()) != null) {
+//                                process = builder.start();
+//
+//                                try (OutputStream stdin = process.getOutputStream();
+//                                     InputStream stdout = process.getInputStream();
+//
+//                                     BufferedReader reader = new BufferedReader(new InputStreamReader(stdout), ExternalSort.getCAPACITY());
+//                                     BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stdin), ExternalSort.getCAPACITY())) {
+//
+//                                    writer.write(line);
+//                                    writer.flush();
+//                                    writer.close();
+//
+//                                    process.waitFor();
+//
+//                                    while ((line = reader.readLine()) != null) {
+//                                        outputWriter.append(line).append(String.valueOf('\n'));
+//                                    }
+//                                }
+//                                outputWriter.flush();
+//                            }
+//                        }
                     break;
 
                 default:
