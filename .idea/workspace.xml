@@ -2,13 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="8e8476d4-b481-4706-a784-54d3b6c7e6c7" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/out/production/InMemoryMapReduce/ExternalSort.class" afterPath="$PROJECT_DIR$/out/production/InMemoryMapReduce/ExternalSort.class" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/out/production/InMemoryMapReduce/MapReduce.class" afterPath="$PROJECT_DIR$/out/production/InMemoryMapReduce/MapReduce.class" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/input.txt" afterPath="$PROJECT_DIR$/input.txt" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/output.txt" afterPath="$PROJECT_DIR$/output.txt" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/result.txt" afterPath="$PROJECT_DIR$/result.txt" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/MapReduce.java" afterPath="$PROJECT_DIR$/src/MapReduce.java" />
     </list>
     <list id="3ef5d80f-977e-4062-b40e-6ba5faff7d2d" name="Rejected commit: Default" comment="" />
     <ignored path="$PROJECT_DIR$/out/" />
@@ -84,16 +78,6 @@
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="0">
               <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="input1.txt" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/input1.txt">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="22">
-              <caret line="1" column="0" lean-forward="false" selection-start-line="1" selection-start-column="0" selection-end-line="1" selection-end-column="0" />
               <folding />
             </state>
           </provider>
@@ -662,12 +646,12 @@
       <workItem from="1490105140626" duration="5911000" />
       <workItem from="1490300738268" duration="134000" />
       <workItem from="1491329256020" duration="3212000" />
-      <workItem from="1491745771644" duration="8402000" />
+      <workItem from="1491745771644" duration="8701000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="48410000" />
+    <option name="totallyTimeSpent" value="48709000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="0" width="1929" height="1038" extended-state="1" />
