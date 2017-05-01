@@ -1,3 +1,4 @@
+compile generate, join_map_append, join_map_final, join_map_revert, join_reduce_joiner 
 generate N AB lower_bound upper_bound
 generate N BC lower_bound upper_bound
 map AB.txt joined.txt join_map_revert

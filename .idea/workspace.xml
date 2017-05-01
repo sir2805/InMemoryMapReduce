@@ -2,11 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="8e8476d4-b481-4706-a784-54d3b6c7e6c7" name="Default" comment="">
-      <change type="DELETED" beforePath="$PROJECT_DIR$/map.cpp" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/reduce.cpp" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/result.txt" afterPath="$PROJECT_DIR$/result.txt" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/MapReduce.java" afterPath="$PROJECT_DIR$/src/MapReduce.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/task_sequence.txt" afterPath="$PROJECT_DIR$/task_sequence.txt" />
     </list>
     <list id="3ef5d80f-977e-4062-b40e-6ba5faff7d2d" name="Rejected commit: Default" comment="" />
     <ignored path="$PROJECT_DIR$/out/" />
@@ -671,12 +667,12 @@
       <workItem from="1493636896741" duration="4604000" />
       <workItem from="1493657876945" duration="2939000" />
       <workItem from="1493667016062" duration="2889000" />
-      <workItem from="1493671105030" duration="562000" />
+      <workItem from="1493671105030" duration="885000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="64180000" />
+    <option name="totallyTimeSpent" value="64503000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="0" width="1880" height="1038" extended-state="0" />
