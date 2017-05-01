@@ -1,0 +1,6 @@
+generate N AB lower_bound upper_bound
+generate N BC lower_bound upper_bound
+map AB.txt joined.txt join_map_revert
+map BC.txt joined.txt join_map_append
+reduce joined.txt reduced.txt join_reduce_joiner
+map reduced.txt ABC join_map_final 

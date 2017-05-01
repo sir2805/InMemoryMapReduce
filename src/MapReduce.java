@@ -14,6 +14,9 @@ class Node implements Comparable<Node> {
         StringTokenizer tokenizer = new StringTokenizer(str, "\t");
         key = tokenizer.nextToken();
         value = tokenizer.nextToken();
+        while (tokenizer.hasMoreTokens()) {
+            value += ('\t' + tokenizer.nextToken());
+        }
     }
 
     @Override
@@ -38,7 +41,9 @@ class ExternalSort {
 
     public ExternalSort(String inputFilePath) throws IOException {
         try (RandomAccessFile inputFile = new RandomAccessFile(inputFilePath, "r")) {
-            filePaths.add("sorter0.txt");
+            filePaths.add("sorter0.tmp");
+            File tmp = new File("sorter0.tmp");
+            tmp.deleteOnExit();
             int i = 1;
             while (inputFile.getFilePointer() != inputFile.length()) {
                 String chunk = read(inputFile, CAPACITY);
@@ -69,13 +74,9 @@ class ExternalSort {
                 newSize = (i + 1)/2;
             }
             for (int j = filePaths.size() - 1; j > newSize; j--){
-                File tmpFile = new File(filePaths.get(j));
-                tmpFile.delete();
                 filePaths.remove(j);
             }
         }
-        File tmpFile = new File(filePaths.get(0));
-        tmpFile.delete();
         return filePaths.get(1);
     }
 
@@ -148,9 +149,10 @@ class ExternalSort {
     }
 
     private void createFile(int idx, String chunk) throws IOException{
-        filePaths.add("sorter" + idx + ".txt");
+        filePaths.add("sorter" + idx + ".tmp");
         File sorter = new File(filePaths.get(idx));
-        Queue<Node> content = new PriorityQueue<>(Node::compareTo);
+        sorter.deleteOnExit();
+        Queue<Node> content = new PriorityQueue<>();
         split(chunk, content);
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(sorter))) {
             while (content.size() != 0) {
@@ -194,7 +196,7 @@ public class MapReduce {
         ProcessBuilder builder =  new ProcessBuilder(striptParams);
         String line;
 
-        try (BufferedWriter outputWriter = new BufferedWriter(new FileWriter(outputFilePath))) {
+        try (BufferedWriter outputWriter = new BufferedWriter(new FileWriter(outputFilePath, true))) {
             switch (command) {
                 case "reduce":
                     ExternalSort sorted = new ExternalSort(inputFilePath);
