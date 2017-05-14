@@ -1,4 +1,6 @@
 import java.io.*;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.*;
 
 /**
@@ -172,39 +174,78 @@ class ExternalSort {
     }
 }
 
-public class MapReduceNode {
-    public static void main(String[] args) throws IOException, InterruptedException {
-        String inputFilePath;
-        String outputFilePath;
-        List<String> striptParams;
-        String command;
+class NodeThread extends Thread {
+    private static int outputFileNum = 0;
+    private Socket socket = null;
 
-        if (args.length < 4) {
-            throw new IllegalArgumentException();
-        }
-        else {
-            command = args[0];
-            String[] params = Arrays.copyOfRange(args, 1, args.length - 2);
-            striptParams = Arrays.asList(params);
-            inputFilePath = args[args.length - 2];
-            outputFilePath = args[args.length - 1];
-        }
-        Process process;
-        ProcessBuilder builder =  new ProcessBuilder(striptParams);
-        String line;
+    public NodeThread(Socket socket) {
+        super("NodeThread");
+        this.socket = socket;
+    }
 
-        try (BufferedWriter outputWriter = new BufferedWriter(new FileWriter(outputFilePath, true))) {
-            switch (command) {
-                case "reduce":
-                    ExternalSort sorted = new ExternalSort(inputFilePath);
-                    try (BufferedReader inputReader = new BufferedReader(new FileReader(sorted.sort()))) {
-                        List<Node> sameKey = new ArrayList<>();
-                        sameKey.add(new Node(inputReader.readLine()));
-                        while ((line = inputReader.readLine()) != null) {
-                            Node curNode = new Node(line);
-                            if (curNode.compareTo(sameKey.get(0))== 0) {
-                                sameKey.add(curNode);
-                            } else {
+    public void run() {
+
+        try (
+                PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+                BufferedReader in = new BufferedReader(
+                        new InputStreamReader(
+                                socket.getInputStream()));
+        ) {
+            String inputLine, outputLine;
+
+            while ((inputLine = in.readLine()) != null) {
+                String inputFilePath;
+                String outputFilePath = String.valueOf(outputFileNum++);
+                List<String> striptParams;
+                String command;
+                String[]args = inputLine.split("[ \t]");
+                command = args[0];
+                String[] params = Arrays.copyOfRange(args, 1, args.length - 2);
+                striptParams = Arrays.asList(params);
+                inputFilePath = args[args.length - 2];
+                outputFilePath += args[args.length - 1];
+
+                Process process;
+                ProcessBuilder builder =  new ProcessBuilder(striptParams);
+                String line;
+
+                try (BufferedWriter outputWriter = new BufferedWriter(new FileWriter(outputFilePath, true))) {
+                    switch (command) {
+                        case "reduce":
+                            ExternalSort sorted = new ExternalSort(inputFilePath);
+                            try (BufferedReader inputReader = new BufferedReader(new FileReader(sorted.sort()))) {
+                                List<Node> sameKey = new ArrayList<>();
+                                sameKey.add(new Node(inputReader.readLine()));
+                                while ((line = inputReader.readLine()) != null) {
+                                    Node curNode = new Node(line);
+                                    if (curNode.compareTo(sameKey.get(0))== 0) {
+                                        sameKey.add(curNode);
+                                    } else {
+                                        process = builder.start();
+
+                                        try (OutputStream stdin = process.getOutputStream();
+                                             InputStream stdout = process.getInputStream();
+
+                                             BufferedReader reader = new BufferedReader(new InputStreamReader(stdout), ExternalSort.getCAPACITY());
+                                             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stdin), ExternalSort.getCAPACITY())) {
+
+                                            for (Node st : sameKey) {
+                                                writer.write(st.toString() + '\n');
+                                            }
+
+//                                    writer.flush();
+                                            writer.close();
+                                            process.waitFor();
+                                            String res;
+
+                                            while ((res = reader.readLine()) != null) {
+                                                outputWriter.append(res).append(String.valueOf('\n'));
+                                            }
+                                            sameKey.clear();
+                                            sameKey.add(curNode);
+                                        }
+                                    }
+                                }
                                 process = builder.start();
 
                                 try (OutputStream stdin = process.getOutputStream();
@@ -216,87 +257,7 @@ public class MapReduceNode {
                                     for (Node st : sameKey) {
                                         writer.write(st.toString() + '\n');
                                     }
-
-//                                    writer.flush();
                                     writer.close();
-                                    process.waitFor();
-                                    String res;
-
-                                    while ((res = reader.readLine()) != null) {
-                                        outputWriter.append(res).append(String.valueOf('\n'));
-                                    }
-                                    sameKey.clear();
-                                    sameKey.add(curNode);
-                                }
-                            }
-                        }
-                        process = builder.start();
-
-                        try (OutputStream stdin = process.getOutputStream();
-                             InputStream stdout = process.getInputStream();
-
-                             BufferedReader reader = new BufferedReader(new InputStreamReader(stdout), ExternalSort.getCAPACITY());
-                             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stdin), ExternalSort.getCAPACITY())) {
-
-                            for (Node st : sameKey) {
-                                writer.write(st.toString() + '\n');
-                            }
-                            writer.close();
-                            process.waitFor();
-
-                            while ((line = reader.readLine()) != null) {
-                                outputWriter.append(line).append(String.valueOf('\n'));
-                            }
-                        }
-                    }
-                    break;
-
-                case "map":
-//                    try (RandomAccessFile inputFile = new RandomAccessFile(inputFilePath, "r")) {
-//                        String buf;
-//                        while (inputFile.getFilePointer() != inputFile.length()) {
-//                            byte[] content = new byte[ExternalSort.getCAPACITY()];
-//                            inputFile.read(content);
-//                            String endOfLine = inputFile.readLine();
-//                            if (endOfLine != null)
-//                                buf = new String(content) + endOfLine + '\n';
-//                            else {
-//                                buf = new String(content) + '\n';
-//                            }
-//
-//                            process = builder.start();
-//
-//                            try (OutputStream stdin = process.getOutputStream();
-//                                 InputStream stdout = process.getInputStream();
-//
-//                                 BufferedReader reader = new BufferedReader(new InputStreamReader(stdout), 2 * ExternalSort.getCAPACITY());
-//                                 BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stdin), 2  *ExternalSort.getCAPACITY())) {
-//                                writer.write(buf);
-////                                //writer.flush();
-//                                writer.close();
-//
-//                                process.waitFor();
-//
-//                                while ((line = reader.readLine()) != null) {
-//                                    outputWriter.append(line).append('\n');
-//                                }
-//                            }
-////                            outputWriter.flush();
-//                        }
-//                    }
-                        try (BufferedReader inputReader = new BufferedReader(new FileReader(inputFilePath), ExternalSort.getCAPACITY())) {
-                            while ((line = inputReader.readLine()) != null) {
-                                process = builder.start();
-
-                                try (OutputStream stdin = process.getOutputStream();
-                                     InputStream stdout = process.getInputStream();
-
-                                     BufferedReader reader = new BufferedReader(new InputStreamReader(stdout), ExternalSort.getCAPACITY());
-                                     BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stdin), ExternalSort.getCAPACITY())) {
-
-                                    writer.write(line);
-                                    writer.close();
-
                                     process.waitFor();
 
                                     while ((line = reader.readLine()) != null) {
@@ -304,13 +265,201 @@ public class MapReduceNode {
                                     }
                                 }
                             }
-                        }
-                    break;
+                            break;
 
-                default:
-                    throw new IllegalArgumentException("No such command. map/reduce required");
+                        case "map":
+                            try (BufferedReader inputReader = new BufferedReader(new FileReader(inputFilePath), ExternalSort.getCAPACITY())) {
+                                while ((line = inputReader.readLine()) != null) {
+                                    process = builder.start();
+
+                                    try (OutputStream stdin = process.getOutputStream();
+                                         InputStream stdout = process.getInputStream();
+
+                                         BufferedReader reader = new BufferedReader(new InputStreamReader(stdout), ExternalSort.getCAPACITY());
+                                         BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stdin), ExternalSort.getCAPACITY())) {
+
+                                        writer.write(line);
+                                        writer.close();
+
+                                        process.waitFor();
+
+                                        while ((line = reader.readLine()) != null) {
+                                            outputWriter.append(line).append(String.valueOf('\n'));
+                                        }
+                                    }
+                                }
+                            }
+                            break;
+
+                        default:
+                            throw new IllegalArgumentException("No such command. map/reduce required");
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+                outputLine = outputFilePath;
+                out.println(outputLine);
             }
+            socket.close();
+
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+    }
+}
+
+public class MapReduceNode {
+
+    public static void main(String[] args) throws IOException, InterruptedException {
+//        String inputFilePath;
+//        String outputFilePath;
+//        List<String> striptParams;
+//        String command;
+        int portNumber = 777;
+
+        if (args.length == 1) {
+            portNumber = Integer.parseInt(args[0]);
+        }
+
+        try (ServerSocket serverSocket = new ServerSocket(portNumber)) {
+            while (true) {
+                new NodeThread(serverSocket.accept()).start();
+            }
+        } catch (IOException e) {
+            System.err.println("Could not listen on port " + portNumber);
+            System.exit(-1);
+        }
+//        else if (args.length >= 4) {
+//            command = args[0];
+//            String[] params = Arrays.copyOfRange(args, 1, args.length - 2);
+//            striptParams = Arrays.asList(params);
+//            inputFilePath = args[args.length - 2];
+//            outputFilePath = args[args.length - 1];
+//        }
+
+//        Process process;
+//        ProcessBuilder builder =  new ProcessBuilder(striptParams);
+//        String line;
+//
+//        try (BufferedWriter outputWriter = new BufferedWriter(new FileWriter(outputFilePath, true))) {
+//            switch (command) {
+//                case "reduce":
+//                    ExternalSort sorted = new ExternalSort(inputFilePath);
+//                    try (BufferedReader inputReader = new BufferedReader(new FileReader(sorted.sort()))) {
+//                        List<Node> sameKey = new ArrayList<>();
+//                        sameKey.add(new Node(inputReader.readLine()));
+//                        while ((line = inputReader.readLine()) != null) {
+//                            Node curNode = new Node(line);
+//                            if (curNode.compareTo(sameKey.get(0))== 0) {
+//                                sameKey.add(curNode);
+//                            } else {
+//                                process = builder.start();
+//
+//                                try (OutputStream stdin = process.getOutputStream();
+//                                     InputStream stdout = process.getInputStream();
+//
+//                                     BufferedReader reader = new BufferedReader(new InputStreamReader(stdout), ExternalSort.getCAPACITY());
+//                                     BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stdin), ExternalSort.getCAPACITY())) {
+//
+//                                    for (Node st : sameKey) {
+//                                        writer.write(st.toString() + '\n');
+//                                    }
+//
+////                                    writer.flush();
+//                                    writer.close();
+//                                    process.waitFor();
+//                                    String res;
+//
+//                                    while ((res = reader.readLine()) != null) {
+//                                        outputWriter.append(res).append(String.valueOf('\n'));
+//                                    }
+//                                    sameKey.clear();
+//                                    sameKey.add(curNode);
+//                                }
+//                            }
+//                        }
+//                        process = builder.start();
+//
+//                        try (OutputStream stdin = process.getOutputStream();
+//                             InputStream stdout = process.getInputStream();
+//
+//                             BufferedReader reader = new BufferedReader(new InputStreamReader(stdout), ExternalSort.getCAPACITY());
+//                             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stdin), ExternalSort.getCAPACITY())) {
+//
+//                            for (Node st : sameKey) {
+//                                writer.write(st.toString() + '\n');
+//                            }
+//                            writer.close();
+//                            process.waitFor();
+//
+//                            while ((line = reader.readLine()) != null) {
+//                                outputWriter.append(line).append(String.valueOf('\n'));
+//                            }
+//                        }
+//                    }
+//                    break;
+//
+//                case "map":
+////                    try (RandomAccessFile inputFile = new RandomAccessFile(inputFilePath, "r")) {
+////                        String buf;
+////                        while (inputFile.getFilePointer() != inputFile.length()) {
+////                            byte[] content = new byte[ExternalSort.getCAPACITY()];
+////                            inputFile.read(content);
+////                            String endOfLine = inputFile.readLine();
+////                            if (endOfLine != null)
+////                                buf = new String(content) + endOfLine + '\n';
+////                            else {
+////                                buf = new String(content) + '\n';
+////                            }
+////
+////                            process = builder.start();
+////
+////                            try (OutputStream stdin = process.getOutputStream();
+////                                 InputStream stdout = process.getInputStream();
+////
+////                                 BufferedReader reader = new BufferedReader(new InputStreamReader(stdout), 2 * ExternalSort.getCAPACITY());
+////                                 BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stdin), 2  *ExternalSort.getCAPACITY())) {
+////                                writer.write(buf);
+//////                                //writer.flush();
+////                                writer.close();
+////
+////                                process.waitFor();
+////
+////                                while ((line = reader.readLine()) != null) {
+////                                    outputWriter.append(line).append('\n');
+////                                }
+////                            }
+//////                            outputWriter.flush();
+////                        }
+////                    }
+//                        try (BufferedReader inputReader = new BufferedReader(new FileReader(inputFilePath), ExternalSort.getCAPACITY())) {
+//                            while ((line = inputReader.readLine()) != null) {
+//                                process = builder.start();
+//
+//                                try (OutputStream stdin = process.getOutputStream();
+//                                     InputStream stdout = process.getInputStream();
+//
+//                                     BufferedReader reader = new BufferedReader(new InputStreamReader(stdout), ExternalSort.getCAPACITY());
+//                                     BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stdin), ExternalSort.getCAPACITY())) {
+//
+//                                    writer.write(line);
+//                                    writer.close();
+//
+//                                    process.waitFor();
+//
+//                                    while ((line = reader.readLine()) != null) {
+//                                        outputWriter.append(line).append(String.valueOf('\n'));
+//                                    }
+//                                }
+//                            }
+//                        }
+//                    break;
+//
+//                default:
+//                    throw new IllegalArgumentException("No such command. map/reduce required");
+//            }
+//        }
         System.out.println("Success");
     }
 }

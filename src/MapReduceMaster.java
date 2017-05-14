@@ -1,6 +1,7 @@
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -48,29 +49,63 @@ class Master extends Thread {
                 }
                 inputFilePath = query[3];
                 outputFilePath = query[4];
-                List<String> mapReduceParams = new LinkedList<>();
-                List<String> files = new LinkedList<>();
+                try (FileWriter pathsWriter = new FileWriter(outputFilePath, true)) {
+                    List<String> mapReduceParams = new LinkedList<>();
+                    List<String> files = new LinkedList<>();
 
-                try (BufferedReader br = new BufferedReader(new FileReader(inputFilePath))) {
-                    String line = br.readLine();
-                    while (line != null) {
-                        files.add(line);
-                        line = br.readLine();
+                    try (BufferedReader br = new BufferedReader(new FileReader(inputFilePath))) {
+                        String line = br.readLine();
+                        while (line != null) {
+                            files.add(line);
+                            line = br.readLine();
+                        }
                     }
+
+                    try (
+                            Socket echoSocket = new Socket(address, 777);
+                            BufferedWriter nout =
+                                    new BufferedWriter(new OutputStreamWriter(echoSocket.getOutputStream()));
+                            BufferedReader nin =
+                                    new BufferedReader(
+                                            new InputStreamReader(echoSocket.getInputStream()));
+                    ) {
+                        for (String file : files) {
+                            nout.append(command);
+                            nout.append('\t');
+                            for (String scriptParam : scriptParams) {
+                                nout.append(scriptParam);
+                                nout.append('\t');
+                            }
+                            nout.append(file);
+                            nout.append('\t');
+                            nout.append(outputFilePath);
+                            nout.append('\n');
+                            nout.flush();
+
+                            pathsWriter.write(nin.readLine() + '\n');
+//                        mapReduceParams.clear();
+//                        mapReduceParams.add(command);
+//                        mapReduceParams.addAll(scriptParams);
+//                        mapReduceParams.add(file);
+//                        mapReduceParams.add(outputFilePath);
+//                        MapReduceNode.main(mapReduceParams.toArray(new String[0]));
+                            out.append("Query #").append(String.valueOf(queryNo)).append(" finished successfully");
+                            out.flush();
+                        }
+
+
+                    } catch (UnknownHostException e) {
+                        System.err.println("Don't know about host " + address);
+                        System.exit(1);
+                    } catch (IOException e) {
+                        System.err.println("Couldn't get I/O for the connection to " +
+                                address);
+                        System.exit(1);
+                    }
+
                 }
 
-                for (String file : files) {
-                    mapReduceParams.clear();
-                    mapReduceParams.add(command);
-                    mapReduceParams.addAll(scriptParams);
-                    mapReduceParams.add(file);
-                    mapReduceParams.add(outputFilePath);
-                    MapReduceNode.main(mapReduceParams.toArray(new String[0]));
-                    out.append("Query #").append(String.valueOf(queryNo)).append(" finished successfully");
-                    out.flush();
-                }
-
-            } catch (IOException | InterruptedException e) {
+            } catch (IOException e) {
                 System.err.println("Query #" + String.valueOf(queryNo) + " finished with an exception:");
                 e.printStackTrace();
             }
