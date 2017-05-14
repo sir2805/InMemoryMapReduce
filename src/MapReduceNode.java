@@ -172,7 +172,7 @@ class ExternalSort {
     }
 }
 
-public class MapReduce {
+public class MapReduceNode {
     public static void main(String[] args) throws IOException, InterruptedException {
         String inputFilePath;
         String outputFilePath;
@@ -189,9 +189,6 @@ public class MapReduce {
             inputFilePath = args[args.length - 2];
             outputFilePath = args[args.length - 1];
         }
-
-        //File input = new File(inputFilePath);
-
         Process process;
         ProcessBuilder builder =  new ProcessBuilder(striptParams);
         String line;
@@ -233,7 +230,6 @@ public class MapReduce {
                                 }
                             }
                         }
-//                        outputWriter.flush();
                         process = builder.start();
 
                         try (OutputStream stdin = process.getOutputStream();
@@ -245,15 +241,12 @@ public class MapReduce {
                             for (Node st : sameKey) {
                                 writer.write(st.toString() + '\n');
                             }
-
-//                            //writer.flush();
                             writer.close();
                             process.waitFor();
 
                             while ((line = reader.readLine()) != null) {
                                 outputWriter.append(line).append(String.valueOf('\n'));
                             }
-//                            outputWriter.flush();
                         }
                     }
                     break;
@@ -302,7 +295,6 @@ public class MapReduce {
                                      BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stdin), ExternalSort.getCAPACITY())) {
 
                                     writer.write(line);
-//                                    writer.flush();
                                     writer.close();
 
                                     process.waitFor();
@@ -311,7 +303,6 @@ public class MapReduce {
                                         outputWriter.append(line).append(String.valueOf('\n'));
                                     }
                                 }
-//                                outputWriter.flush();
                             }
                         }
                     break;
@@ -320,5 +311,6 @@ public class MapReduce {
                     throw new IllegalArgumentException("No such command. map/reduce required");
             }
         }
+        System.out.println("Success");
     }
 }
