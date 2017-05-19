@@ -129,6 +129,9 @@ public class MapReduceClient {
                     String str = in.readLine();
                     System.out.println(str);
                     System.out.println("Input MapReduce params separated by space");
+                } catch (IOException e) {
+                    System.err.println("Unable to reach master");
+                    e.printStackTrace();
                 }
 //                new ClientThread(ipAddress, serverPort, query.toString());
 //                if (args.length < 5) {

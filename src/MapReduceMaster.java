@@ -2,12 +2,43 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
-/**
- * Created by PC on 13.05.2017.
- */
+class FileLocator {
+    private static final String INPUTFILEPATHS = "inputFilePaths.txt";
+    private static Map<String, LinkedList<String>> filePaths;
+    private FileLocator() {}
+
+    static void setFilePaths() {
+        filePaths = new HashMap<>();
+        try (BufferedReader br = new BufferedReader(new FileReader(INPUTFILEPATHS))) {
+            String line = br.readLine();
+            while (line != null) {
+                String[]file_node = line.split("[/]");
+                LinkedList<String>chunks = new LinkedList<>();
+                for (int i = 1; i < file_node.length; i++) {
+                    chunks.add(file_node[i]);
+//                    String[] file_chunks = file_node[1].split("[#]");
+                }
+                filePaths.put(file_node[0], chunks);
+                line = br.readLine();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.exit(-1);
+        }
+    }
+    static LinkedList<String> getHostPortNo(String filename) {
+        if (filePaths == null) {
+            setFilePaths();
+        }
+        return filePaths.get(filename);
+    }
+}
+
 class Master extends Thread {
     private static int queryNo = 0;
 
@@ -28,8 +59,8 @@ class Master extends Thread {
 //                if (str.equals("END"))
 //                    break;
 
-            String address;
-            address = socket.getLocalAddress().getHostAddress();
+
+//            address = socket.getLocalAddress().getHostAddress();
 
             String queryLine = in.readLine();
 
@@ -49,64 +80,57 @@ class Master extends Thread {
                 }
                 inputFilePath = query[3];
                 outputFilePath = query[4];
-                try (FileWriter pathsWriter = new FileWriter(outputFilePath, true)) {
-                    List<String> mapReduceParams = new LinkedList<>();
-                    List<String> files = new LinkedList<>();
 
-                    try (BufferedReader br = new BufferedReader(new FileReader(inputFilePath))) {
-                        String line = br.readLine();
-                        while (line != null) {
-                            files.add(line);
-                            line = br.readLine();
-                        }
-                    }
+                LinkedList<String>hostPortNoChunks = FileLocator.getHostPortNo(inputFilePath);
 
-                    try (
-                            Socket echoSocket = new Socket(address, 777);
-                            BufferedWriter nout =
-                                    new BufferedWriter(new OutputStreamWriter(echoSocket.getOutputStream()));
-                            BufferedReader nin =
-                                    new BufferedReader(
-                                            new InputStreamReader(echoSocket.getInputStream()));
-                    ) {
-                        for (String file : files) {
+                for (String chunk : hostPortNoChunks) {
+                    String[] hostPortNo = chunk.split("[:]");
+                    String address = hostPortNo[0];
+                    int portNo = Integer.parseInt(hostPortNo[1]);
+                    String fileName = hostPortNo[2];
+
+                    try (FileWriter pathsWriter = new FileWriter(outputFilePath)) {
+
+
+                        try (
+                                Socket echoSocket = new Socket(address, portNo);
+                                BufferedWriter nout =
+                                        new BufferedWriter(new OutputStreamWriter(echoSocket.getOutputStream()));
+                                BufferedReader nin =
+                                        new BufferedReader(
+                                                new InputStreamReader(echoSocket.getInputStream()));
+                        ) {
                             nout.append(command);
                             nout.append('\t');
                             for (String scriptParam : scriptParams) {
                                 nout.append(scriptParam);
                                 nout.append('\t');
                             }
-                            nout.append(file);
+                            nout.append(fileName);
                             nout.append('\t');
                             nout.append(outputFilePath);
                             nout.append('\n');
                             nout.flush();
 
                             pathsWriter.write(nin.readLine() + '\n');
-//                        mapReduceParams.clear();
-//                        mapReduceParams.add(command);
-//                        mapReduceParams.addAll(scriptParams);
-//                        mapReduceParams.add(file);
-//                        mapReduceParams.add(outputFilePath);
-//                        MapReduceNode.main(mapReduceParams.toArray(new String[0]));
                             out.append("Query #").append(String.valueOf(queryNo)).append(" finished successfully");
                             out.flush();
+
+                        } catch (UnknownHostException e) {
+                            System.err.println("Don't know about host " + address);
+                            System.exit(1);
+                        } catch (IOException e) {
+                            System.err.println("Couldn't get I/O for the connection to " +
+                                    address);
+                            System.exit(1);
                         }
-
-
-                    } catch (UnknownHostException e) {
-                        System.err.println("Don't know about host " + address);
-                        System.exit(1);
-                    } catch (IOException e) {
-                        System.err.println("Couldn't get I/O for the connection to " +
-                                address);
-                        System.exit(1);
                     }
-
                 }
-
             } catch (IOException e) {
                 System.err.println("Query #" + String.valueOf(queryNo) + " finished with an exception:");
+                e.printStackTrace();
+            } catch (RuntimeException e) {
+                System.err.println("No such file on any machine, try put it again");
                 e.printStackTrace();
             }
         }
@@ -119,11 +143,25 @@ class Master extends Thread {
 
 public class MapReduceMaster {
     public static void main(String[] args) {
-        int port = 666;
+        int port = 667;
 
         if (args.length == 1) {
             port = Integer.parseInt(args[0]);
         }
+
+        FileLocator.setFilePaths();
+
+//        List<String>inputPaths = new LinkedList<>();
+//
+//        try(BufferedReader br = new BufferedReader(new FileReader("inputFilePaths.txt"))) {
+//            String line = br.readLine();
+//            while (line != null) {
+//                inputPaths.add(line);
+//                line = br.readLine();
+//            }
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
 
         try (ServerSocket ss = new ServerSocket(port)) {
             while (true) {

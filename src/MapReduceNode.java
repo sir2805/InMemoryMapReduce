@@ -1,6 +1,7 @@
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.Buffer;
 import java.util.*;
 
 /**
@@ -186,12 +187,12 @@ class NodeThread extends Thread {
     public void run() {
 
         try (
-                PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+                BufferedWriter out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
                 BufferedReader in = new BufferedReader(
                         new InputStreamReader(
                                 socket.getInputStream()));
         ) {
-            String inputLine, outputLine;
+            String inputLine;
 
             while ((inputLine = in.readLine()) != null) {
                 String inputFilePath;
@@ -298,8 +299,10 @@ class NodeThread extends Thread {
                     e.printStackTrace();
                 }
 
-                outputLine = outputFilePath;
-                out.println(outputLine);
+                out.append(outputFilePath);
+                out.append(socket.getLocalSocketAddress().toString());
+                out.append('\n');
+                out.flush();
             }
             socket.close();
 
