@@ -125,9 +125,13 @@ public class MapReduceClient {
                                 (new OutputStreamWriter(socket.getOutputStream())), true)
                 ) {
                     out.println(query);
-
-                    String str = in.readLine();
-                    System.out.println(str);
+                    System.out.println("Work in progress");
+                    try {
+                        in.readLine();
+                        System.out.println("Success");
+                    } catch (NullPointerException e) {
+                        e.printStackTrace();
+                    }
                     System.out.println("Input MapReduce params separated by space");
                 } catch (IOException e) {
                     System.err.println("Unable to reach master");

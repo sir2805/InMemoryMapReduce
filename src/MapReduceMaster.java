@@ -89,7 +89,7 @@ class Master extends Thread {
                     int portNo = Integer.parseInt(hostPortNo[1]);
                     String fileName = hostPortNo[2];
 
-                    try (FileWriter pathsWriter = new FileWriter(outputFilePath)) {
+                    try (FileWriter pathsWriter = new FileWriter(outputFilePath, true)) {
 
 
                         try (
@@ -112,9 +112,11 @@ class Master extends Thread {
                             nout.append('\n');
                             nout.flush();
 
-                            pathsWriter.write(nin.readLine() + '\n');
-                            out.append("Query #").append(String.valueOf(queryNo)).append(" finished successfully");
-                            out.flush();
+                            String path = nin.readLine();
+                            System.out.println(path + " created");
+                            pathsWriter.write(path + '\n');
+                            out.append('\n');
+//                            out.flush();
 
                         } catch (UnknownHostException e) {
                             System.err.println("Don't know about host " + address);
@@ -130,6 +132,8 @@ class Master extends Thread {
                 System.err.println("Query #" + String.valueOf(queryNo) + " finished with an exception:");
                 e.printStackTrace();
             } catch (RuntimeException e) {
+                out.append("No such file on any machine, try put it again");
+                out.flush();
                 System.err.println("No such file on any machine, try put it again");
                 e.printStackTrace();
             }

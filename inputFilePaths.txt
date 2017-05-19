@@ -1,1 +1,1 @@
-C:\\Users\\PC\\IdeaProjects\\InMemoryMapReduce\\AB.txt/127.0.0.1:777:AB.txt
+AB.txt/127.0.0.1:777:AB.txt/127.0.0.1:777:AB.txt
